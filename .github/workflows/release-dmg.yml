@@ -1,0 +1,74 @@
+name: Build and Release DMG
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to release (for manual runs)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install macOS packaging tool
+        run: brew install create-dmg
+
+      - name: Install dependencies
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          python -m pip install -U pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Build app bundle
+        run: |
+          source .venv/bin/activate
+          ./scripts/build_app.sh
+
+      - name: Build dmg
+        run: ./scripts/build_dmg.sh
+
+      - name: Archive app bundle
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent \
+            dist/LocalnetInspector.app \
+            dist/LocalnetInspector.app.zip
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: localnet-inspector-macos
+          path: |
+            dist/LocalnetInspector.app
+            dist/LocalnetInspector.app.zip
+            dist/LocalnetInspector.dmg
+          if-no-files-found: error
+
+      - name: Publish GitHub Release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.tag || github.ref_name }}
+          files: |
+            dist/LocalnetInspector.dmg
+            dist/LocalnetInspector.app.zip
+          generate_release_notes: true
