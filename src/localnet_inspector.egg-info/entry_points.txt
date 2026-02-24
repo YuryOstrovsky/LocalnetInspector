@@ -1,0 +1,2 @@
+[console_scripts]
+localnet-inspector = localnet_inspector.ui.app:run

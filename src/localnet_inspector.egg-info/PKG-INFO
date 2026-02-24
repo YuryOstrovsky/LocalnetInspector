@@ -1,0 +1,110 @@
+Metadata-Version: 2.4
+Name: localnet-inspector
+Version: 0.1.0
+Summary: Local subnet device discovery and DHCP fingerprint collector
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: pyside6>=6.6
+Requires-Dist: scapy>=2.5
+Requires-Dist: psutil>=5.9
+
+# Localnet Inspector (macOS)
+
+A local macOS desktop app (Python + PySide6) that:
+- Actively discovers devices on your subnet (ARP scan)
+- Passively listens for DHCP traffic to capture DHCP parameter request lists
+- Guesses likely OS/type from DHCP fingerprints
+- Stores device history in local SQLite (`data/devices.db`)
+
+## 1) Prerequisites
+
+- macOS (Apple Silicon or Intel)
+- Python 3.11+
+- Homebrew (recommended)
+
+Install base tools:
+
+```bash
+brew install python@3.11
+```
+
+Optional for `.dmg` packaging:
+
+```bash
+brew install create-dmg
+```
+
+## 2) Setup
+
+```bash
+cd /Users/yostrovs/Documents/New\ project/localnet-inspector
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -U pip
+pip install -r requirements.txt
+pip install -e .
+```
+
+## 3) Run the app
+
+Packet capture and ARP scanning often require elevated privileges.
+
+```bash
+cd /Users/yostrovs/Documents/New\ project/localnet-inspector
+source .venv/bin/activate
+sudo -E localnet-inspector
+```
+
+UI behavior:
+- `Start`: starts periodic ARP scan loop (every 60s) + DHCP listener
+- `Scan Now`: single immediate ARP scan
+- Table auto-refreshes every 2s
+
+## 4) How DHCP fingerprinting works
+
+- App reads DHCP `param_req_list` from discover/request packets.
+- Fingerprint is stored as comma-separated option numbers.
+- `os_guess` is mapped from known lists and fallback heuristics.
+- You can extend mappings in `src/localnet_inspector/core/fingerprints.py`.
+
+## 5) Build local `.app` executable
+
+```bash
+cd /Users/yostrovs/Documents/New\ project/localnet-inspector
+source .venv/bin/activate
+./scripts/build_app.sh
+```
+
+Output:
+- `dist/LocalnetInspector.app`
+
+## 6) Build `.dmg`
+
+```bash
+cd /Users/yostrovs/Documents/New\ project/localnet-inspector
+./scripts/build_dmg.sh
+```
+
+Output:
+- `dist/LocalnetInspector.dmg`
+
+## 7) Keep it running continuously (recommended path)
+
+For constant collection in your subnet, run as a LaunchAgent/LaunchDaemon.
+
+- Use a `launchd` plist to auto-start on login or boot.
+- If you need continuous sniffing without manual sudo prompt, configure permissions carefully (or run as root-managed service).
+
+## 8) Important limitations
+
+- DHCP passive collection only sees renewals/new negotiations while app is running.
+- On switched networks, you only capture broadcast DHCP traffic visible to your host.
+- DHCP fingerprinting is probabilistic, not guaranteed exact OS detection.
+- Vendor/OUI identification is not yet implemented (placeholder field in DB/UI).
+
+## 9) Next improvements
+
+- Add MAC OUI vendor database lookup.
+- Add mDNS/NetBIOS/SSDP enrichment.
+- Add confidence scores per fingerprint rule.
+- Add CSV/JSON export and filters.

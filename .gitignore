@@ -1,0 +1,9 @@
+.venv/
+.pyinstaller-config/
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+.DS_Store
+data/*.db

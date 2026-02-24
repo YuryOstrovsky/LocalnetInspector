@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "localnet-inspector"
+version = "0.1.0"
+description = "Local subnet device discovery and multi-signal OS/device profiler"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pyside6>=6.6",
+  "scapy>=2.5",
+  "psutil>=5.9",
+  "zeroconf>=0.132",
+]
+
+[project.scripts]
+localnet-inspector = "localnet_inspector.ui.app:run"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
